@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PrivacyPal – Digital Privacy Safety Scoring</title>
+<link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700&f[]=cabinet-grotesk@500,700,800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
+<script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.min.js" defer></script>
+<style>
+:root{--text-xs:clamp(0.75rem,0.7rem + 0.25vw,0.875rem);--text-sm:clamp(0.875rem,0.8rem + 0.35vw,1rem);--text-base:clamp(1rem,0.95rem + 0.25vw,1.125rem);--text-lg:clamp(1.125rem,1rem + 0.75vw,1.5rem);--text-xl:clamp(1.5rem,1.2rem + 1.25vw,2.25rem);--space-1:.25rem;--space-2:.5rem;--space-3:.75rem;--space-4:1rem;--space-5:1.25rem;--space-6:1.5rem;--space-8:2rem;--space-10:2.5rem;--space-12:3rem;--space-16:4rem;--font-display:'Cabinet Grotesk',Arial Black,sans-serif;--font-body:'General Sans',Helvetica Neue,sans-serif;--radius-sm:.375rem;--radius-md:.5rem;--radius-lg:.75rem;--radius-xl:1rem;--radius-full:9999px;--transition-fast:120ms cubic-bezier(.16,1,.3,1);--transition:180ms cubic-bezier(.16,1,.3,1);--transition-slow:400ms cubic-bezier(.16,1,.3,1)}
+:root,[data-theme="dark"]{--bg:#0b1120;--surface:#111827;--surface2:#1a2332;--surface-off:#0f1a2e;--surface-up:#1e293b;--divider:#1e2d3d;--border:#2a3a4e;--text:#e2e8f0;--text-muted:#94a3b8;--text-faint:#64748b;--primary:#01696f;--primary-l:#0d9da5;--primary-glow:rgba(1,105,111,.15);--primary-h:#0c5a5f;--danger:#ef4444;--danger-bg:rgba(239,68,68,.1);--warn:#f59e0b;--warn-bg:rgba(245,158,11,.1);--ok:#10b981;--ok-bg:rgba(16,185,129,.1);--sh-sm:0 1px 2px rgba(0,0,0,.3);--sh-md:0 4px 12px rgba(0,0,0,.4);--sh-lg:0 12px 32px rgba(0,0,0,.5)}
+[data-theme="light"]{--bg:#f0f4f8;--surface:#fff;--surface2:#f8fafc;--surface-off:#e8eef4;--surface-up:#fff;--divider:#e2e8f0;--border:#cbd5e1;--text:#0f172a;--text-muted:#475569;--text-faint:#94a3b8;--primary:#01696f;--primary-l:#0d9da5;--primary-glow:rgba(1,105,111,.08);--primary-h:#015358;--danger:#dc2626;--danger-bg:rgba(220,38,38,.08);--warn:#d97706;--warn-bg:rgba(217,119,6,.08);--ok:#059669;--ok-bg:rgba(5,150,105,.08);--sh-sm:0 1px 2px rgba(0,0,0,.05);--sh-md:0 4px 12px rgba(0,0,0,.08);--sh-lg:0 12px 32px rgba(0,0,0,.12)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-font-smoothing:antialiased;scroll-behavior:smooth}
+body{min-height:100dvh;line-height:1.6;font-family:var(--font-body);font-size:var(--text-base);color:var(--text);background:var(--bg);overflow-x:hidden}
+h1,h2,h3,h4,h5,h6{font-family:var(--font-display);line-height:1.2}
+p,li{max-width:72ch}
+img,svg{display:block;max-width:100%}
+button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
+a{color:var(--primary-l);text-decoration:none}
+a,button,[role="button"],input,textarea,select{transition:color var(--transition),background var(--transition),border-color var(--transition),box-shadow var(--transition),transform var(--transition)}
+:focus-visible{outline:2px solid var(--primary-l);outline-offset:3px;border-radius:var(--radius-sm)}
+::selection{background:rgba(1,105,111,.3);color:var(--text)}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border-width:0}
+
+/* ── LAYOUT ── */
+.app{display:flex;min-height:100dvh}
+.sidebar{width:260px;background:var(--surface);border-right:1px solid var(--divider);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;transition:transform .3s cubic-bezier(.16,1,.3,1)}
+.sb-head{padding:var(--space-6) var(--space-5);border-bottom:1px solid var(--divider);display:flex;align-items:center;gap:var(--space-3)}
+.logo-icon{width:40px;height:40px;flex-shrink:0}
+.logo-text{font-family:var(--font-display);font-size:var(--text-lg);font-weight:700;letter-spacing:-.02em}
+.logo-text span{color:var(--primary-l)}
+.sb-nav{flex:1;padding:var(--space-4) var(--space-3);display:flex;flex-direction:column;gap:var(--space-1)}
+.nav-item{display:flex;align-items:center;gap:var(--space-3);padding:var(--space-3) var(--space-4);border-radius:var(--radius-lg);font-size:var(--text-sm);font-weight:500;color:var(--text-muted);cursor:pointer;transition:all var(--transition);position:relative;width:100%;text-align:left}
+.nav-item:hover{background:var(--primary-glow);color:var(--text)}
+.nav-item.active{background:var(--primary-glow);color:var(--primary-l);font-weight:600}
+.nav-item.active::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:3px;height:20px;background:var(--primary-l);border-radius:var(--radius-full)}
+.nav-item i{width:20px;height:20px;flex-shrink:0}
+.sb-foot{padding:var(--space-4) var(--space-5);border-top:1px solid var(--divider)}
+.theme-btn{display:flex;align-items:center;gap:var(--space-3);padding:var(--space-2) var(--space-3);border-radius:var(--radius-md);font-size:var(--text-sm);color:var(--text-muted);width:100%}
+.theme-btn:hover{background:var(--primary-glow);color:var(--text)}
+.main{flex:1;margin-left:260px;padding:var(--space-8);max-width:1200px}
+.mob-header{display:none;position:fixed;top:0;left:0;right:0;z-index:90;background:var(--surface);border-bottom:1px solid var(--divider);padding:var(--space-3) var(--space-4);align-items:center;justify-content:space-between}
+.mob-menu-btn{padding:var(--space-2);border-radius:var(--radius-md)}
+.mob-menu-btn:hover{background:var(--primary-glow)}
+.sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99}
+.page{display:none;animation:fadeIn .35s ease}
+.page.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes modalUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.pg-head{margin-bottom:var(--space-8)}
+.pg-title{font-size:var(--text-xl);font-weight:700;margin-bottom:var(--space-2);letter-spacing:-.02em}
+.pg-sub{font-size:var(--text-sm);color:var(--text-muted)}
+
+/* ── CARDS ── */
+.card{background:var(--surface);border:1px solid var(--divider);border-radius:var(--radius-xl);padding:var(--space-6)}
+.card-hov:hover{border-color:var(--border);box-shadow:var(--sh-md);transform:translateY(-2px);transition:all var(--transition)}
+
+/* ── DASHBOARD ── */
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-6);margin-bottom:var(--space-6)}
+.score-card{grid-column:1/-1;display:flex;align-items:center;gap:var(--space-8);padding:var(--space-8);background:linear-gradient(135deg,var(--surface) 0%,var(--surface-off) 100%);position:relative;overflow:hidden}
+.score-card::before{content:'';position:absolute;top:-50%;right:-20%;width:400px;height:400px;background:radial-gradient(circle,var(--primary-glow) 0%,transparent 70%);pointer-events:none}
+.gauge-wrap{position:relative;width:200px;height:130px;flex-shrink:0;overflow:hidden}
+.gauge-val{position:absolute;bottom:0;left:50%;transform:translateX(-50%);text-align:center}
+.gauge-num{font-family:var(--font-display);font-size:3rem;font-weight:800;line-height:1;color:var(--primary-l)}
+.gauge-lbl{font-size:var(--text-xs);color:var(--text-muted);text-transform:uppercase;letter-spacing:.1em;margin-top:var(--space-1)}
+.score-info h2{font-size:var(--text-xl);font-weight:700;margin-bottom:var(--space-2)}
+.score-info p{color:var(--text-muted);font-size:var(--text-sm);margin-bottom:var(--space-4)}
+.score-badge{display:inline-flex;align-items:center;gap:var(--space-2);padding:var(--space-2) var(--space-4);border-radius:var(--radius-full);font-size:var(--text-sm);font-weight:600}
+.score-badge.fair{background:var(--warn-bg);color:var(--warn)}
+.score-badge.good{background:var(--ok-bg);color:var(--ok)}
+.score-badge.poor{background:var(--danger-bg);color:var(--danger)}
+.stat-card{display:flex;align-items:flex-start;gap:var(--space-4)}
+.stat-icon{width:48px;height:48px;border-radius:var(--radius-lg);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.stat-icon.teal{background:var(--primary-glow);color:var(--primary-l)}
+.stat-icon.amber{background:var(--warn-bg);color:var(--warn)}
+.stat-icon.green{background:var(--ok-bg);color:var(--ok)}
+.stat-icon.red{background:var(--danger-bg);color:var(--danger)}
+.stat-val{font-family:var(--font-display);font-size:var(--text-xl);font-weight:700;line-height:1.1}
+.stat-lbl{font-size:var(--text-xs);color:var(--text-muted);margin-top:var(--space-1)}
+.alerts-section{margin-top:var(--space-6)}
+.sec-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-4)}
+.sec-title{font-size:var(--text-lg);font-weight:700}
+.alert-item{display:flex;align-items:flex-start;gap:var(--space-4);padding:var(--space-4);border-radius:var(--radius-lg);background:var(--surface);border:1px solid var(--divider);margin-bottom:var(--space-3)}
+.alert-item:hover{border-color:var(--border)}
+.alert-dot{width:10px;height:10px;border-radius:var(--radius-full);flex-shrink:0;margin-top:6px}
+.alert-dot.high{background:var(--danger)}
+.alert-dot.med{background:var(--warn)}
+.alert-dot.low{background:var(--ok)}
+.alert-body{flex:1}
+.alert-title{font-weight:600;font-size:var(--text-sm);margin-bottom:var(--space-1)}
+.alert-desc{font-size:var(--text-xs);color:var(--text-muted);line-height:1.5}
+.alert-time{font-size:var(--text-xs);color:var(--text-faint);white-space:nowrap;margin-top:2px}
+
+/* ── TRACKER ── */
+.search-wrap{position:relative;margin-bottom:var(--space-6)}
+.search-wrap input{width:100%;padding:var(--space-3) var(--space-4) var(--space-3) var(--space-10);background:var(--surface);border:1px solid var(--divider);border-radius:var(--radius-lg);color:var(--text);font-size:var(--text-sm)}
+.search-wrap input::placeholder{color:var(--text-faint)}
+.search-wrap input:focus{outline:none;border-color:var(--primary-l);box-shadow:0 0 0 3px var(--primary-glow)}
+.search-wrap i,.search-wrap svg{position:absolute;left:var(--space-4);top:50%;transform:translateY(-50%);color:var(--text-faint);width:18px;height:18px;pointer-events:none}
+.filter-tabs{display:flex;gap:var(--space-2);margin-bottom:var(--space-6);flex-wrap:wrap}
+.ftab{padding:var(--space-2) var(--space-4);border-radius:var(--radius-full);font-size:var(--text-xs);font-weight:500;color:var(--text-muted);background:var(--surface);border:1px solid var(--divider);cursor:pointer}
+.ftab:hover{border-color:var(--border);color:var(--text)}
+.ftab.active{background:var(--primary);border-color:var(--primary);color:#fff}
+.app-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:var(--space-4)}
+.app-card{cursor:pointer;padding:var(--space-5)}
+.app-card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-3)}
+.app-name{font-weight:700;font-size:var(--text-base)}
+.priv-score{display:flex;align-items:center;font-family:var(--font-display);font-weight:700;font-size:var(--text-base)}
+.priv-score.good{color:var(--ok)}
+.priv-score.fair{color:var(--warn)}
+.priv-score.poor{color:var(--danger)}
+.score-bar{width:100%;height:6px;background:var(--surface-off);border-radius:var(--radius-full);margin-bottom:var(--space-3);overflow:hidden}
+.score-fill{height:100%;border-radius:var(--radius-full);transition:width .8s cubic-bezier(.16,1,.3,1)}
+.score-fill.good{background:var(--ok)}
+.score-fill.fair{background:var(--warn)}
+.score-fill.poor{background:var(--danger)}
+.app-summary{font-size:var(--text-xs);color:var(--text-muted);margin-bottom:var(--space-3);line-height:1.5}
+.app-tags{display:flex;gap:var(--space-2);flex-wrap:wrap;margin-bottom:var(--space-3)}
+.tag{padding:var(--space-1) var(--space-3);border-radius:var(--radius-full);font-size:.7rem;font-weight:500;background:var(--surface-off);color:var(--text-muted)}
+.app-card-foot{display:flex;align-items:center;justify-content:space-between}
+.track-btn{padding:var(--space-2) var(--space-4);border-radius:var(--radius-full);font-size:var(--text-xs);font-weight:600;border:1px solid var(--primary-l);color:var(--primary-l)}
+.track-btn:hover{background:var(--primary);color:#fff;border-color:var(--primary)}
+.track-btn.tracked{background:var(--primary);color:#fff;border-color:var(--primary)}
+.detail-link{font-size:var(--text-xs);font-weight:500;color:var(--primary-l);display:flex;align-items:center;gap:var(--space-1)}
+.tracked-badge{background:var(--primary);color:#fff;font-size:.65rem;font-weight:700;width:20px;height:20px;border-radius:var(--radius-full);display:flex;align-items:center;justify-content:center;margin-left:auto}
+
+/* ── LEARN ── */
+.articles-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:var(--space-5)}
+.article-card{cursor:pointer;padding:0;overflow:hidden}
+.art-visual{height:140px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.art-visual i,.art-visual svg{width:40px;height:40px;color:rgba(255,255,255,.9);position:relative;z-index:1}
+.v1{background:linear-gradient(135deg,#01696f,#0d9da5)}
+.v2{background:linear-gradient(135deg,#1e3a5f,#2d6a9f)}
+.v3{background:linear-gradient(135deg,#4a1e6d,#7c3aed)}
+.v4{background:linear-gradient(135deg,#1a4731,#059669)}
+.v5{background:linear-gradient(135deg,#7c2d12,#ea580c)}
+.v6{background:linear-gradient(135deg,#1e3a5f,#0891b2)}
+.v7{background:linear-gradient(135deg,#365314,#84cc16)}
+.v8{background:linear-gradient(135deg,#581c87,#a855f7)}
+.art-body{padding:var(--space-5)}
+.art-meta{display:flex;align-items:center;gap:var(--space-3);margin-bottom:var(--space-2)}
+.art-tag{font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--primary-l)}
+.art-time{font-size:var(--text-xs);color:var(--text-faint)}
+.art-title{font-weight:700;font-size:var(--text-base);margin-bottom:var(--space-2);line-height:1.3}
+.art-desc{font-size:var(--text-xs);color:var(--text-muted);line-height:1.5}
+.art-view{display:none;max-width:720px}
+.art-view.active{display:block;animation:fadeIn .35s ease}
+.art-back{display:inline-flex;align-items:center;gap:var(--space-2);font-size:var(--text-sm);font-weight:500;color:var(--text-muted);margin-bottom:var(--space-6);padding:var(--space-2) var(--space-3);border-radius:var(--radius-md)}
+.coming-soon-box{display:flex;flex-direction:column;align-items:center;text-align:center;padding:var(--space-16) var(--space-8);border:1px dashed var(--border);border-radius:var(--radius-xl);background:var(--surface);margin-top:var(--space-8)}
+.cs-icon{width:64px;height:64px;border-radius:var(--radius-xl);background:var(--primary-glow);color:var(--primary-l);display:flex;align-items:center;justify-content:center;margin-bottom:var(--space-5)}
+.cs-icon i,.cs-icon svg{width:28px;height:28px}
+.cs-title{font-size:var(--text-lg);font-weight:700;margin-bottom:var(--space-3);color:var(--text)}
+.cs-desc{font-size:var(--text-sm);color:var(--text-muted);max-width:42ch;line-height:1.7;margin-bottom:var(--space-6)}
+.cs-back{display:inline-flex;align-items:center;gap:var(--space-2);padding:var(--space-2) var(--space-5);border-radius:var(--radius-full);font-size:var(--text-sm);font-weight:600;border:1px solid var(--primary-l);color:var(--primary-l);transition:all var(--transition)}
+.cs-back:hover{background:var(--primary);color:#fff;border-color:var(--primary)}
+.art-back:hover{background:var(--primary-glow);color:var(--text)}
+.art-view h1{font-size:var(--text-xl);font-weight:800;margin-bottom:var(--space-4);letter-spacing:-.02em}
+.art-view-meta{display:flex;gap:var(--space-4);align-items:center;margin-bottom:var(--space-8);padding-bottom:var(--space-6);border-bottom:1px solid var(--divider)}
+.art-view h2{font-size:var(--text-lg);font-weight:700;margin-top:var(--space-8);margin-bottom:var(--space-3);color:var(--primary-l)}
+.art-view p{margin-bottom:var(--space-4);line-height:1.75;color:var(--text-muted)}
+.art-view ul,.art-view ol{margin-bottom:var(--space-4);padding-left:var(--space-6)}
+.art-view li{margin-bottom:var(--space-2);line-height:1.6;color:var(--text-muted)}
+.art-view strong{color:var(--text)}
+.art-view blockquote{border-left:3px solid var(--primary-l);padding-left:var(--space-5);margin:var(--space-6) 0;font-style:italic;color:var(--text-muted)}
+
+/* ── METHODOLOGY ── */
+.method-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-6);margin-bottom:var(--space-8)}
+.chart-card{padding:var(--space-6)}
+.chart-wrap{max-width:300px;margin:0 auto}
+.criteria-list{display:flex;flex-direction:column;gap:var(--space-4)}
+.criteria-item{padding:var(--space-4) var(--space-5);background:var(--surface);border:1px solid var(--divider);border-radius:var(--radius-lg)}
+.criteria-item:hover{border-color:var(--border)}
+.criteria-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-2)}
+.criteria-name{font-weight:700;font-size:var(--text-sm);display:flex;align-items:center;gap:var(--space-2)}
+.criteria-wt{font-family:var(--font-display);font-weight:700;font-size:var(--text-sm);color:var(--primary-l)}
+.criteria-desc{font-size:var(--text-xs);color:var(--text-muted);line-height:1.5}
+.method-text h3{font-size:var(--text-base);font-weight:700;margin:var(--space-6) 0 var(--space-3)}
+.method-text p{color:var(--text-muted);margin-bottom:var(--space-3);line-height:1.7}
+.score-range-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-4);margin:var(--space-6) 0}
+.srange{padding:var(--space-4);background:var(--surface);border:1px solid var(--divider);border-radius:var(--radius-lg);text-align:center}
+.srange-val{font-family:var(--font-display);font-weight:800;font-size:var(--text-lg);margin-bottom:var(--space-1)}
+.srange-lbl{font-size:var(--text-xs);color:var(--text-muted)}
+.sdg-banner{background:linear-gradient(135deg,var(--surface) 0%,var(--surface-off) 100%);border:1px solid var(--divider);border-radius:var(--radius-xl);padding:var(--space-6);margin-top:var(--space-8)}
+.sdg-banner h3{font-size:var(--text-base);font-weight:700;margin-bottom:var(--space-3);display:flex;align-items:center;gap:var(--space-2)}
+.sdg-banner p{color:var(--text-muted);font-size:var(--text-sm);margin-bottom:var(--space-4);line-height:1.7}
+.sdg-tags{display:flex;gap:var(--space-3);flex-wrap:wrap}
+.sdg-tag{padding:var(--space-2) var(--space-4);border-radius:var(--radius-full);font-size:var(--text-xs);font-weight:600;border:1px solid var(--divider)}
+.sdg-tag.s16{background:rgba(0,104,157,.1);color:#4fb3d9;border-color:rgba(0,104,157,.3)}
+.sdg-tag.s9{background:rgba(253,105,37,.1);color:#fd9a6b;border-color:rgba(253,105,37,.3)}
+
+/* ── MODAL ── */
+.modal-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;align-items:center;justify-content:center;padding:var(--space-4)}
+.modal-ov.active{display:flex;animation:fadeIn .2s ease}
+.modal{background:var(--surface);border:1px solid var(--divider);border-radius:var(--radius-xl);max-width:680px;width:100%;max-height:85vh;overflow-y:auto;animation:modalUp .3s cubic-bezier(.16,1,.3,1)}
+.modal-head{padding:var(--space-6);border-bottom:1px solid var(--divider);display:flex;align-items:center;justify-content:space-between}
+.modal-head h2{font-size:var(--text-lg);font-weight:700}
+.modal-close{width:36px;height:36px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;color:var(--text-muted)}
+.modal-close:hover{background:var(--surface-off);color:var(--text)}
+.modal-body{padding:var(--space-6)}
+.det-score-head{display:flex;align-items:center;gap:var(--space-6);margin-bottom:var(--space-6);padding-bottom:var(--space-6);border-bottom:1px solid var(--divider)}
+.det-score-circle{width:80px;height:80px;border-radius:var(--radius-full);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:1.75rem;font-weight:800;flex-shrink:0}
+.det-score-circle.good{background:var(--ok-bg);color:var(--ok);border:2px solid var(--ok)}
+.det-score-circle.fair{background:var(--warn-bg);color:var(--warn);border:2px solid var(--warn)}
+.det-score-circle.poor{background:var(--danger-bg);color:var(--danger);border:2px solid var(--danger)}
+.det-info h3{font-size:var(--text-base);font-weight:700;margin-bottom:var(--space-1)}
+.det-info p{font-size:var(--text-sm);color:var(--text-muted)}
+.det-sec{margin-bottom:var(--space-6)}
+.det-sec h4{font-size:var(--text-sm);font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-faint);margin-bottom:var(--space-3)}
+.det-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3)}
+.det-item{padding:var(--space-3) var(--space-4);background:var(--surface-off);border-radius:var(--radius-md)}
+.det-item-lbl{font-size:var(--text-xs);color:var(--text-faint);margin-bottom:var(--space-1)}
+.det-item-val{font-size:var(--text-sm);font-weight:600;display:flex;align-items:center;gap:var(--space-2)}
+.det-item-val .dot{width:8px;height:8px;border-radius:var(--radius-full);flex-shrink:0}
+.dot.green{background:var(--ok)}
+.dot.yellow{background:var(--warn)}
+.dot.red{background:var(--danger)}
+.bbar-wrap{margin-bottom:var(--space-3)}
+.bbar-lbl{display:flex;justify-content:space-between;font-size:var(--text-xs);margin-bottom:var(--space-1)}
+.bbar-lbl span:first-child{color:var(--text-muted)}
+.bbar-lbl span:last-child{font-weight:600}
+.bbar{height:8px;background:var(--surface-off);border-radius:var(--radius-full);overflow:hidden}
+.bbar-fill{height:100%;border-radius:var(--radius-full);transition:width .6s cubic-bezier(.16,1,.3,1)}
+
+/* ── STARTUP POPUP ── */
+.su-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:1000;align-items:center;justify-content:center;padding:var(--space-4);backdrop-filter:blur(4px)}
+.su-ov.active{display:flex}
+.su-modal{background:var(--surface);border:1px solid var(--divider);border-radius:var(--radius-xl);max-width:640px;width:100%;max-height:88vh;display:flex;flex-direction:column;animation:modalUp .35s cubic-bezier(.16,1,.3,1);overflow:hidden}
+.su-head{padding:var(--space-6) var(--space-6) var(--space-4);border-bottom:1px solid var(--divider);display:flex;align-items:flex-start;gap:var(--space-4);flex-shrink:0}
+.su-icon{width:48px;height:48px;border-radius:var(--radius-lg);background:var(--primary-glow);color:var(--primary-l);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.su-head-text h2{font-size:var(--text-lg);font-weight:700;margin-bottom:var(--space-1)}
+.su-head-text p{font-size:var(--text-sm);color:var(--text-muted);max-width:44ch}
+.su-body{padding:var(--space-5) var(--space-6) var(--space-4);overflow-y:auto;flex:1;min-height:0}
+.su-filters{display:flex;flex-wrap:wrap;gap:var(--space-2);margin-bottom:var(--space-4);padding-bottom:var(--space-4);border-bottom:1px solid var(--divider)}
+.su-fbtn{padding:var(--space-1) var(--space-3);border-radius:var(--radius-full);font-size:var(--text-xs);font-weight:500;color:var(--text-muted);background:var(--surface-off);border:1px solid var(--divider);cursor:pointer;transition:all var(--transition)}
+.su-fbtn:hover{border-color:var(--border);color:var(--text)}
+.su-fbtn.on{background:var(--primary);border-color:var(--primary);color:#fff}
+.su-actions{display:flex;gap:var(--space-3);margin-bottom:var(--space-4)}
+.su-action{font-size:var(--text-xs);font-weight:500;color:var(--primary-l);cursor:pointer;padding:var(--space-1) var(--space-3);border-radius:var(--radius-full);border:1px solid var(--primary-glow);transition:all var(--transition)}
+.su-action:hover{background:var(--primary-glow)}
+.su-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:var(--space-2)}
+.su-item{display:flex;align-items:center;gap:var(--space-3);padding:var(--space-3) var(--space-4);border-radius:var(--radius-lg);border:1px solid var(--divider);cursor:pointer;user-select:none;transition:all var(--transition)}
+.su-item:hover,.su-item.on{border-color:var(--primary-l);background:var(--primary-glow)}
+.su-cb{width:18px;height:18px;border-radius:5px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all var(--transition)}
+.su-item.on .su-cb{background:var(--primary-l);border-color:var(--primary-l)}
+.su-ck{display:none;width:11px;height:11px;stroke:#fff;stroke-width:2.5;fill:none;overflow:visible}
+.su-item.on .su-ck{display:block}
+.su-name{font-size:var(--text-sm);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.su-cat{font-size:.7rem;color:var(--text-faint);margin-top:1px}
+.su-pill{font-size:.7rem;font-weight:700;font-family:var(--font-display);padding:2px 8px;border-radius:var(--radius-full);flex-shrink:0}
+.su-pill.good{background:var(--ok-bg);color:var(--ok)}
+.su-pill.fair{background:var(--warn-bg);color:var(--warn)}
+.su-pill.poor{background:var(--danger-bg);color:var(--danger)}
+.su-foot{padding:var(--space-4) var(--space-6);border-top:1px solid var(--divider);display:flex;align-items:center;justify-content:space-between;gap:var(--space-4);flex-shrink:0}
+.su-count-info{font-size:var(--text-sm);color:var(--text-muted)}
+.su-count-info strong{color:var(--primary-l);font-family:var(--font-display)}
+.su-btns{display:flex;gap:var(--space-3)}
+.su-skip{padding:var(--space-2) var(--space-5);border-radius:var(--radius-full);font-size:var(--text-sm);font-weight:500;color:var(--text-muted);border:1px solid var(--divider);transition:all var(--transition)}
+.su-skip:hover{border-color:var(--border);color:var(--text)}
+.su-go{padding:var(--space-2) var(--space-6);border-radius:var(--radius-full);font-size:var(--text-sm);font-weight:600;background:var(--primary);color:#fff;border:1px solid var(--primary);transition:all var(--transition)}
+.su-go:hover:not(:disabled){background:var(--primary-h)}
+.su-go:disabled{opacity:.4;cursor:not-allowed}
+
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+.sidebar{transform:translateX(-100%)}
+.sidebar.open{transform:translateX(0)}
+.sb-overlay.active{display:block}
+.mob-header{display:flex}
+.main{margin-left:0;padding:var(--space-4);padding-top:calc(60px + var(--space-4))}
+.dash-grid{grid-template-columns:1fr}
+.score-card{flex-direction:column;text-align:center}
+.gauge-wrap{width:160px;height:110px}
+.gauge-num{font-size:2.5rem}
+.method-grid{grid-template-columns:1fr}
+.det-grid{grid-template-columns:1fr}
+.det-score-head{flex-direction:column;text-align:center}
+.app-grid{grid-template-columns:1fr}
+.articles-grid{grid-template-columns:1fr}
+.score-range-grid{grid-template-columns:1fr}
+.su-grid{grid-template-columns:1fr}
+.su-foot{flex-direction:column;align-items:stretch}
+.su-btns{justify-content:flex-end}}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:var(--radius-full)}
+::-webkit-scrollbar-thumb:hover{background:var(--text-faint)}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- SIDEBAR -->
+<nav class="sidebar" id="sidebar" role="navigation" aria-label="Main navigation">
+  <div class="sb-head">
+    <svg class="logo-icon" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="40" rx="10" fill="#01696f" fill-opacity=".15"/><path d="M20 6L8 12v8c0 7.73 5.12 14.96 12 17 6.88-2.04 12-9.27 12-17v-8L20 6z" fill="#01696f" fill-opacity=".2" stroke="#0d9da5" stroke-width="1.5"/><path d="M16 20l3 3 6-6" stroke="#0d9da5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span class="logo-text">Privacy<span>Pal</span></span>
+  </div>
+  <div class="sb-nav">
+    <button class="nav-item active" data-page="dashboard" onclick="showPage('dashboard')"><i data-lucide="layout-dashboard"></i>Dashboard</button>
+    <button class="nav-item" data-page="tracker" onclick="showPage('tracker')"><i data-lucide="radar"></i>App Tracker <span class="tracked-badge" id="trackedCount">0</span></button>
+    <button class="nav-item" data-page="learn" onclick="showPage('learn')"><i data-lucide="book-open"></i>Learn</button>
+    <button class="nav-item" data-page="methodology" onclick="showPage('methodology')"><i data-lucide="bar-chart-3"></i>Methodology</button>
+  </div>
+  <div class="sb-foot">
+    <button class="theme-btn" id="themeToggle"><i data-lucide="sun"></i><span>Light Mode</span></button>
+  </div>
+</nav>
+
+<div class="sb-overlay" id="sbOverlay" onclick="closeMob()"></div>
+
+<!-- MOBILE HEADER -->
+<header class="mob-header">
+  <div style="display:flex;align-items:center;gap:var(--space-3)">
+    <svg class="logo-icon" style="width:32px;height:32px" viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="10" fill="#01696f" fill-opacity=".15"/><path d="M20 6L8 12v8c0 7.73 5.12 14.96 12 17 6.88-2.04 12-9.27 12-17v-8L20 6z" fill="#01696f" fill-opacity=".2" stroke="#0d9da5" stroke-width="1.5"/><path d="M16 20l3 3 6-6" stroke="#0d9da5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span class="logo-text">Privacy<span>Pal</span></span>
+  </div>
+  <button class="mob-menu-btn" onclick="openMob()" aria-label="Open navigation"><i data-lucide="menu"></i></button>
+</header>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- DASHBOARD -->
+  <section class="page active" id="page-dashboard">
+    <div class="pg-head"><h1 class="pg-title">Privacy Dashboard</h1><p class="pg-sub">Your personal digital privacy overview</p></div>
+    <div class="dash-grid">
+      <div class="card score-card">
+        <div class="gauge-wrap"><canvas id="gaugeCanvas" width="200" height="200"></canvas><div class="gauge-val"><div class="gauge-num" id="gaugeNum">–</div><div class="gauge-lbl">out of 100</div></div></div>
+        <div class="score-info"><h2>Your Privacy Health</h2><p>Based on your tracked apps and privacy habits, your overall digital privacy score is calculated across multiple risk factors.</p><div class="score-badge fair" id="scoreBadge"><i data-lucide="shield-alert" style="width:16px;height:16px"></i> Needs Improvement</div></div>
+      </div>
+      <div class="card stat-card"><div class="stat-icon teal"><i data-lucide="app-window"></i></div><div><div class="stat-val" id="statApps">0</div><div class="stat-lbl">Apps Tracked</div></div></div>
+      <div class="card stat-card"><div class="stat-icon amber"><i data-lucide="bell-ring"></i></div><div><div class="stat-val" id="statAlerts">0</div><div class="stat-lbl">Alerts This Month</div></div></div>
+      <div class="card stat-card"><div class="stat-icon green"><i data-lucide="book-check"></i></div><div><div class="stat-val" id="statArticles">3</div><div class="stat-lbl">Articles Read</div></div></div>
+      <div class="card stat-card"><div class="stat-icon red"><i data-lucide="shield-x"></i></div><div><div class="stat-val" id="statBreaches">0</div><div class="stat-lbl">Breaches Detected</div></div></div>
+    </div>
+    <div class="alerts-section">
+      <div class="sec-head"><h2 class="sec-title">Recent Alerts</h2></div>
+      <div class="alert-item"><div class="alert-dot high"></div><div class="alert-body"><div class="alert-title">TikTok Privacy Policy Update</div><div class="alert-desc">TikTok updated its data collection policy to include biometric data. Your privacy score decreased by 5 points.</div></div><div class="alert-time">2h ago</div></div>
+      <div class="alert-item"><div class="alert-dot high"></div><div class="alert-body"><div class="alert-title">Facebook Data Sharing Expansion</div><div class="alert-desc">Meta announced expanded third-party data sharing with advertising partners.</div></div><div class="alert-time">5h ago</div></div>
+      <div class="alert-item"><div class="alert-dot med"></div><div class="alert-body"><div class="alert-title">Instagram Location Tracking</div><div class="alert-desc">Instagram was found collecting precise location data even when the app is in the background.</div></div><div class="alert-time">1d ago</div></div>
+      <div class="alert-item"><div class="alert-dot med"></div><div class="alert-body"><div class="alert-title">Zoom Security Update Available</div><div class="alert-desc">A critical security patch has been released for Zoom. Update to version 6.x immediately.</div></div><div class="alert-time">2d ago</div></div>
+      <div class="alert-item"><div class="alert-dot low"></div><div class="alert-body"><div class="alert-title">Signal Audit Completed</div><div class="alert-desc">Signal completed its latest independent security audit with no major issues found.</div></div><div class="alert-time">3d ago</div></div>
+    </div>
+  </section>
+
+  <!-- TRACKER -->
+  <section class="page" id="page-tracker">
+    <div class="pg-head"><h1 class="pg-title">App &amp; Service Tracker</h1><p class="pg-sub">Monitor the privacy practices of the apps and services you use</p></div>
+    <div class="search-wrap"><i data-lucide="search"></i><input type="text" id="searchInput" placeholder="Search apps, services, or companies..." oninput="filterApps()"></div>
+    <div class="filter-tabs">
+      <button class="ftab active" onclick="setFilter(this,'all')">All</button>
+      <button class="ftab" onclick="setFilter(this,'Social Media')">Social Media</button>
+      <button class="ftab" onclick="setFilter(this,'Messaging')">Messaging</button>
+      <button class="ftab" onclick="setFilter(this,'Video')">Video</button>
+      <button class="ftab" onclick="setFilter(this,'Tech')">Tech</button>
+      <button class="ftab" onclick="setFilter(this,'tracked')">My Tracked</button>
+    </div>
+    <div class="app-grid" id="appGrid"></div>
+  </section>
+
+  <!-- LEARN -->
+  <section class="page" id="page-learn">
+    <div id="artListView">
+      <div class="pg-head"><h1 class="pg-title">Learn About Digital Privacy</h1><p class="pg-sub">Educational resources to help you understand and protect your digital footprint</p></div>
+      <div class="articles-grid" id="articlesGrid"></div>
+    </div>
+    <div class="art-view" id="artView">
+      <button class="art-back" onclick="closeArticle()"><i data-lucide="arrow-left" style="width:16px;height:16px"></i> Back to Articles</button>
+      <div id="artContent"></div>
+    </div>
+  </section>
+
+  <!-- METHODOLOGY -->
+  <section class="page" id="page-methodology">
+    <div class="pg-head"><h1 class="pg-title">Privacy Score Methodology</h1><p class="pg-sub">How we calculate privacy safety scores for apps and services</p></div>
+    <div class="method-grid">
+      <div class="card chart-card"><h3 style="text-align:center;margin-bottom:var(--space-4);font-size:var(--text-lg);font-weight:700">Score Breakdown</h3><div class="chart-wrap"><canvas id="methodChart"></canvas></div></div>
+      <div class="criteria-list">
+        <div class="criteria-item"><div class="criteria-head"><span class="criteria-name"><i data-lucide="database" style="width:16px;height:16px;color:var(--primary-l)"></i>Data Collection</span><span class="criteria-wt">25%</span></div><p class="criteria-desc">What types and volume of personal data does the service collect?</p></div>
+        <div class="criteria-item"><div class="criteria-head"><span class="criteria-name"><i data-lucide="share-2" style="width:16px;height:16px;color:var(--warn)"></i>Third-Party Sharing</span><span class="criteria-wt">25%</span></div><p class="criteria-desc">Does the service share or sell user data to third parties?</p></div>
+        <div class="criteria-item"><div class="criteria-head"><span class="criteria-name"><i data-lucide="lock" style="width:16px;height:16px;color:var(--ok)"></i>Security Measures</span><span class="criteria-wt">20%</span></div><p class="criteria-desc">What security infrastructure protects user data?</p></div>
+        <div class="criteria-item"><div class="criteria-head"><span class="criteria-name"><i data-lucide="eye" style="width:16px;height:16px;color:#4fb3d9"></i>Transparency</span><span class="criteria-wt">15%</span></div><p class="criteria-desc">How clearly does the service communicate its data practices?</p></div>
+        <div class="criteria-item"><div class="criteria-head"><span class="criteria-name"><i data-lucide="sliders-horizontal" style="width:16px;height:16px;color:#a855f7"></i>User Control</span><span class="criteria-wt">15%</span></div><p class="criteria-desc">How much control do users have over their own data?</p></div>
+      </div>
+    </div>
+    <div class="method-text">
+      <h3>How Scores Are Calculated</h3>
+      <p>Each app is evaluated across five core criteria by reviewing publicly available privacy policies, audit reports, and real-world data practices. Scores are updated quarterly or whenever significant policy changes are detected.</p>
+      <h3>Score Ranges</h3>
+      <div class="score-range-grid">
+        <div class="srange"><div class="srange-val" style="color:var(--ok)">71–100</div><div class="srange-lbl">Good — Strong privacy protections</div></div>
+        <div class="srange"><div class="srange-val" style="color:var(--warn)">40–70</div><div class="srange-lbl">Fair — Moderate privacy concerns</div></div>
+        <div class="srange"><div class="srange-val" style="color:var(--danger)">0–39</div><div class="srange-lbl">Poor — Significant privacy risks</div></div>
+      </div>
+      <div class="sdg-banner">
+        <h3><i data-lucide="globe" style="width:20px;height:20px;color:var(--primary-l)"></i> Supporting the UN Sustainable Development Goals</h3>
+        <p>PrivacyPal contributes to SDG 16 and SDG 9 by promoting digital rights, transparency, and equitable access to privacy tools.</p>
+        <div class="sdg-tags"><span class="sdg-tag s16">SDG 16 – Peace, Justice &amp; Strong Institutions</span><span class="sdg-tag s9">SDG 9 – Industry, Innovation &amp; Infrastructure</span></div>
+      </div>
+    </div>
+  </section>
+
+</main>
+</div>
+
+<!-- STARTUP POPUP -->
+<div class="su-ov" id="suOverlay" role="dialog" aria-modal="true">
+  <div class="su-modal">
+    <div class="su-head">
+      <div class="su-icon"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+      <div class="su-head-text"><h2>Welcome to PrivacyPal &#128075;</h2><p>Select the apps you use — we'll build your personalised Privacy Health Score and track any privacy changes.</p></div>
+    </div>
+    <div class="su-body" id="suBody"></div>
+    <div class="su-foot">
+      <span class="su-count-info"><strong id="suCount">0</strong> app<span id="suPlural">s</span> selected</span>
+      <div class="su-btns">
+        <button class="su-skip" onclick="suSkip()">Skip for now</button>
+        <button class="su-go" id="suGoBtn" onclick="suConfirm()" disabled>Start Tracking</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- APP DETAIL MODAL -->
+<div class="modal-ov" id="appModal">
+  <div class="modal">
+    <div class="modal-head"><h2 id="modalTitle">App Details</h2><button class="modal-close" onclick="closeModal()"><i data-lucide="x"></i></button></div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════
+//  DATA
+// ════════════════════════════════════════
+const APPS = [
+  {name:'Facebook',score:35,category:'Social Media',tags:['Social Media','Advertising'],summary:'Extensive data collection and aggressive ad targeting. History of major privacy scandals including Cambridge Analytica.',details:{dataCollection:{score:15,text:'Collects extensive personal, behavioural, and device data including off-platform activity via Meta Pixel.'},thirdPartySharing:{score:20,text:'Shares data with advertisers, data brokers, and thousands of third-party apps through its developer platform.'},security:{score:50,text:'Industry-standard encryption in transit. Two-factor authentication available. Bug bounty program active.'},transparency:{score:40,text:'Publishes transparency reports but privacy policy is lengthy and complex. Settings are buried in menus.'},userControl:{score:45,text:'Data download available. Account deletion is slow. Privacy settings exist but are complex and frequently reset.'},encryption:'In transit only',breaches:'Multiple – 2018 Cambridge Analytica, 2021 533M users',policyReadability:'Low (4,000+ words)'}},
+  {name:'Signal',score:92,category:'Messaging',tags:['Messaging','Privacy-Focused'],summary:'Gold standard for private messaging with end-to-end encryption by default and minimal metadata collection.',details:{dataCollection:{score:95,text:'Collects only phone number for registration. No contacts, messages, or metadata stored on servers.'},thirdPartySharing:{score:98,text:'No data sharing with any third parties. Non-profit with no advertising business model.'},security:{score:95,text:'End-to-end encryption using Signal Protocol. Open-source code. Regular independent security audits.'},transparency:{score:90,text:'Fully open-source. Publishes canary statements. Simple, readable privacy policy.'},userControl:{score:85,text:'Disappearing messages. No server-side data. Account deletion is straightforward.'},encryption:'End-to-end (Signal Protocol)',breaches:'None',policyReadability:'High – Clear and concise'}},
+  {name:'TikTok',score:28,category:'Social Media',tags:['Social Media','Video'],summary:'Aggressive data collection including biometrics, clipboard contents, and precise location tracking.',details:{dataCollection:{score:10,text:'Collects biometric data, keystroke patterns, clipboard contents, device identifiers, and precise location.'},thirdPartySharing:{score:15,text:'Shares data with advertising partners. Parent company ByteDance has faced scrutiny over potential government data access.'},security:{score:40,text:'Standard encryption in transit. Two-factor available. Multiple security vulnerability reports.'},transparency:{score:30,text:'Limited transparency reports. Privacy policy is vague on data transfer practices.'},userControl:{score:35,text:'Limited data export. Account deletion available but data retention is unclear.'},encryption:'In transit only',breaches:'Security vulnerabilities found 2020, 2022. FTC investigation ongoing.',policyReadability:'Low – Vague on key practices'}},
+  {name:'WhatsApp',score:55,category:'Messaging',tags:['Messaging','Communication'],summary:'End-to-end encrypted messages but extensive metadata collection shared with parent company Meta.',details:{dataCollection:{score:55,text:'Messages are encrypted, but collects extensive metadata: contacts, usage patterns, device info, location.'},thirdPartySharing:{score:35,text:'Shares metadata with Meta for advertising. Controversial 2021 policy update expanded data sharing.'},security:{score:80,text:'End-to-end encryption for messages using Signal Protocol. Two-factor authentication available.'},transparency:{score:50,text:'Moderately readable policy. Transparent about encryption but vague on metadata.'},userControl:{score:55,text:'Chat export available. Account deletion clears messages. Limited control over metadata shared with Meta.'},encryption:'End-to-end for messages',breaches:'Pegasus spyware vulnerability 2019.',policyReadability:'Medium – Updated frequently'}},
+  {name:'Google',score:42,category:'Tech',tags:['Search Engine','Tech','Advertising'],summary:"Comprehensive cross-service data collection powering the world's largest advertising network.",details:{dataCollection:{score:20,text:'Tracks search history, location, browsing habits, YouTube activity, and app usage across all Google services.'},thirdPartySharing:{score:25,text:'Shares aggregated data with advertisers. Extensive cross-service tracking through Google Analytics and Ad Manager.'},security:{score:80,text:'Industry-leading security with two-factor authentication, phishing protection, and regular security audits.'},transparency:{score:50,text:'Detailed transparency reports. Privacy policy is comprehensive but complex due to ecosystem size.'},userControl:{score:55,text:'My Activity dashboard allows history deletion. Ad personalisation can be disabled. Account data export available.'},encryption:'In transit and at rest',breaches:'No major recent breach; account takeover via phishing remains primary risk.',policyReadability:'Medium – Detailed but complex'}},
+  {name:'DuckDuckGo',score:88,category:'Tech',tags:['Search Engine','Privacy-Focused'],summary:"Privacy-first search engine that doesn't track searches or build user profiles.",details:{dataCollection:{score:92,text:'Does not track searches, store IP addresses, or create user profiles. No persistent cookies for tracking.'},thirdPartySharing:{score:95,text:'No user data sold or shared with third parties. Revenue from contextual (non-tracking) advertising only.'},security:{score:80,text:'HTTPS everywhere enforced. No user profiles to breach. Browser extension provides additional protections.'},transparency:{score:85,text:'Clear, concise privacy policy. Open-source browser extension. Regular blog posts on privacy practices.'},userControl:{score:88,text:'No account required. All searches are anonymous by default. Browser app provides granular site controls.'},encryption:'In transit; no user data stored',breaches:'None – no user data to breach',policyReadability:'High – Simple and clear'}},
+  {name:'Instagram',score:32,category:'Social Media',tags:['Social Media','Meta'],summary:"Deep behavioural tracking, facial recognition capability, and integration with Meta's advertising ecosystem.",details:{dataCollection:{score:15,text:'Collects location data, browsing history via Facebook Pixel, facial recognition data, and behavioural patterns.'},thirdPartySharing:{score:20,text:"Integrated with Meta's advertising ecosystem. Data shared with thousands of advertising partners."},security:{score:55,text:'Two-factor authentication available but not default. Account takeover via phishing is common.'},transparency:{score:35,text:'Privacy settings are difficult to find. Policy updates frequently with limited user notification.'},userControl:{score:35,text:'Limited data download. Account deletion is buried. Ad preferences exist but have limited effect.'},encryption:'In transit only',breaches:'2019: 49M influencer accounts exposed.',policyReadability:'Low – Dense and complex'}},
+  {name:'Zoom',score:62,category:'Video',tags:['Video','Work'],summary:'Improved privacy posture after 2020 controversies. Now offers end-to-end encryption for paid tiers.',details:{dataCollection:{score:55,text:'Collects meeting metadata, device information, and usage analytics. Content scanning on free tier.'},thirdPartySharing:{score:55,text:'Limited third-party sharing for service providers. 2023 AI training policy reversed after backlash.'},security:{score:75,text:'End-to-end encryption available on paid plans. Two-factor authentication. Regular security updates.'},transparency:{score:65,text:'Improved transparency reports. Privacy policy simplified after public criticism in 2020.'},userControl:{score:60,text:'Meeting recording controls, data deletion requests honoured. E2E encryption requires opt-in on paid plans.'},encryption:'E2E on paid plans; in-transit on free',breaches:'2020: "Zoom-bombing". 500K accounts sold on dark web.',policyReadability:'Medium – Improved since 2020'}},
+  {name:'Apple',score:78,category:'Tech',tags:['Tech','Hardware'],summary:'Privacy-focused approach with on-device processing, App Tracking Transparency, and minimal data collection.',details:{dataCollection:{score:75,text:'Collects limited usage analytics with opt-in. iCloud data is end-to-end encrypted. On-device ML processing.'},thirdPartySharing:{score:80,text:'App Tracking Transparency requires opt-in consent. Limited advertising network compared to Google/Meta.'},security:{score:85,text:'Strong device encryption, Secure Enclave for biometrics, regular security updates, and bug bounty program.'},transparency:{score:75,text:'Publishes transparency reports and government data request data. Privacy labels in App Store.'},userControl:{score:75,text:'Granular app permission controls, privacy reports, Safari intelligent tracking prevention, and Sign in with Apple.'},encryption:'End-to-end for iMessage/FaceTime; at rest for device',breaches:'No major platform breach; iCloud phishing attacks remain risk.',policyReadability:'Medium – Relatively clear'}},
+  {name:'Telegram',score:48,category:'Messaging',tags:['Messaging','Cloud'],summary:'Fast and feature-rich but regular chats are NOT end-to-end encrypted by default — only Secret Chats are.',details:{dataCollection:{score:45,text:'Stores all regular messages on servers. Collects phone number, contacts, and device data.'},thirdPartySharing:{score:55,text:'No advertising. Limited third-party sharing. Cloud message storage creates risk if servers are compromised.'},security:{score:55,text:'MTProto encryption for regular chats (server-side). End-to-end only for opt-in Secret Chats. Closed-source server.'},transparency:{score:40,text:'Limited transparency about server infrastructure and legal requests. Policy lacks detail on data retention.'},userControl:{score:45,text:'Self-destructing messages in Secret Chats. Account deletion available. No data export for regular chats.'},encryption:'Server-side for regular; E2E for Secret Chats only',breaches:'No major breach; concerns about metadata exposure.',policyReadability:'Low-Medium – Lacks detail'}},
+  {name:'Spotify',score:58,category:'Music',tags:['Music','Streaming'],summary:'Collects listening activity and personalisation signals to power recommendations and ads on the free tier.',details:{dataCollection:{score:45,text:'Collects account details, listening history, search activity, device identifiers, and interaction signals.'},thirdPartySharing:{score:50,text:'Shares data with service providers, advertising and measurement partners, and linked integrations.'},security:{score:75,text:'Standard account protections and encrypted connections.'},transparency:{score:60,text:'Privacy disclosures are reasonably detailed but spread across multiple policy pages.'},userControl:{score:60,text:'Users can manage some ad preferences, disconnect integrations, and adjust social sharing.'},encryption:'In transit',breaches:'No major recent public breach.',policyReadability:'Medium'}},
+  {name:'Netflix',score:68,category:'Video',tags:['Video','Streaming'],summary:'Moderate data collection focused on viewing analytics, billing, personalisation, and account management.',details:{dataCollection:{score:60,text:'Collects account details, billing info, viewing history, search activity, and device identifiers.'},thirdPartySharing:{score:60,text:'Shares data with payment processors, vendors, and analytics providers.'},security:{score:80,text:'Standard security controls and encrypted connections for playback and account access.'},transparency:{score:70,text:'Privacy explanations are relatively clear and aligned to the service model.'},userControl:{score:70,text:'Users can manage profiles, playback history, and account settings.'},encryption:'In transit',breaches:'No major recent platform-wide breach.',policyReadability:'Medium-High'}},
+  {name:'YouTube',score:38,category:'Video',tags:['Video','Google'],summary:"Heavy behavioural tracking and cross-service profiling tied into Google's advertising and recommendation systems.",details:{dataCollection:{score:20,text:'Collects watch history, search history, engagement signals, device data, and location-related data.'},thirdPartySharing:{score:20,text:'Data used across Google services and advertising systems with extensive profiling.'},security:{score:70,text:'Benefits from Google account security options including two-factor authentication.'},transparency:{score:40,text:'Google discloses many practices, but the ecosystem is complex to fully understand.'},userControl:{score:40,text:'Users can pause history and adjust ad settings, but avoiding ecosystem-wide profiling is difficult.'},encryption:'In transit',breaches:'No recent YouTube-specific breach.',policyReadability:'Low-Medium'}},
+  {name:'X',score:34,category:'Social Media',tags:['Social Media','News'],summary:'Broad collection of behavioural, device, and interaction data with significant profiling and ad-targeting concerns.',details:{dataCollection:{score:20,text:'Collects account info, posts, engagement data, device identifiers, inferred interests, and browsing signals.'},thirdPartySharing:{score:25,text:'Uses data for advertising, analytics, and partner services with meaningful profiling.'},security:{score:55,text:'Supports passkeys and two-factor methods, but account takeover risks remain material.'},transparency:{score:35,text:'Policies describe broad uses but practical visibility is limited.'},userControl:{score:35,text:'Some controls for discoverability and ad preferences exist, but privacy minimisation is limited.'},encryption:'Limited / In transit',breaches:'Prior incidents and regulatory scrutiny raise ongoing trust concerns.',policyReadability:'Low'}},
+  {name:'Snapchat',score:46,category:'Social Media',tags:['Messaging','Social Media'],summary:'Collects substantial social, camera, and location data, though some privacy controls are stronger than peers.',details:{dataCollection:{score:35,text:'Collects account data, contact info if synced, camera usage, engagement data, and device info.'},thirdPartySharing:{score:35,text:'Uses partner and advertising ecosystems with sharing for analytics and ads.'},security:{score:65,text:'Standard transport protections and account safeguards.'},transparency:{score:45,text:'Policies are available but many data uses are difficult to assess in practice.'},userControl:{score:50,text:'Ghost Mode and location controls help, but many defaults encourage broad sharing.'},encryption:'Partial / In transit',breaches:'Past incidents and account abuse concerns remain relevant.',policyReadability:'Medium'}},
+  {name:'Discord',score:61,category:'Messaging',tags:['Messaging','Gaming'],summary:'Moderate privacy posture with large volumes of message metadata and community exposure.',details:{dataCollection:{score:55,text:'Collects account data, messages stored on servers, server participation, device info, and usage analytics.'},thirdPartySharing:{score:55,text:'Shares data with vendors and service providers, less consumer ad targeting than major social networks.'},security:{score:70,text:'Standard account protections and security programs.'},transparency:{score:65,text:'Policies are comparatively readable.'},userControl:{score:60,text:'Users can tune DMs, friend requests, and server participation.'},encryption:'In transit only',breaches:'No recent major platform-wide breach.',policyReadability:'Medium-High'}},
+  {name:'Messenger',score:30,category:'Messaging',tags:['Messaging','Meta'],summary:"Highly data-intensive messaging tied to Meta's ecosystem with strong profiling and metadata concerns.",details:{dataCollection:{score:15,text:'Collects account details, contact signals, usage activity, device identifiers, and metadata.'},thirdPartySharing:{score:15,text:"Closely tied to Meta's advertising and platform ecosystem."},security:{score:65,text:'Improved encryption options and account security exist.'},transparency:{score:30,text:"Disclosures exist but are difficult to separate from Meta's wider architecture."},userControl:{score:25,text:'Some privacy controls exist, but reduction of metadata profiling is limited.'},encryption:'Partial / varies',breaches:'Meta-related historical incidents continue to shape trust concerns.',policyReadability:'Low'}},
+  {name:'Amazon',score:40,category:'Shopping',tags:['Shopping','E-commerce'],summary:'Extensive purchase, browsing, and device data collection supports recommendations and advertising across Amazon properties.',details:{dataCollection:{score:25,text:'Collects purchase history, browsing behaviour, search activity, address data, and payment data.'},thirdPartySharing:{score:25,text:'Uses data across commerce, advertising, and vendor ecosystems.'},security:{score:75,text:'Strong operational security and account features.'},transparency:{score:40,text:'Policies are comprehensive but sprawling across many business units.'},userControl:{score:35,text:'Users can manage some ad settings and order history visibility.'},encryption:'In transit',breaches:'No single recent consumer-app breach dominates.',policyReadability:'Low-Medium'}},
+  {name:'Uber',score:44,category:'Travel',tags:['Travel','Ride Share'],summary:'Location-heavy service that necessarily processes sensitive trip, payment, and device information.',details:{dataCollection:{score:30,text:'Collects precise location, trip history, payment info, device identifiers, and interaction logs.'},thirdPartySharing:{score:30,text:'Shares data with drivers, maps providers, payment processors, and safety tools.'},security:{score:65,text:'Safety features exist, but the sensitivity of mobility data raises the stakes.'},transparency:{score:45,text:'Core data flows are disclosed, though partner-sharing details are not always intuitive.'},userControl:{score:50,text:'Users can manage some permissions, but precise location use is central to the service.'},encryption:'In transit',breaches:'Historical breach issues still affect trust.',policyReadability:'Medium'}},
+  {name:'LinkedIn',score:41,category:'Professional',tags:['Professional','Social Network'],summary:'Large-scale professional profiling platform with significant data linking and advertising exposure.',details:{dataCollection:{score:25,text:'Collects profile data, employment history, engagement activity, contacts if uploaded, and device info.'},thirdPartySharing:{score:30,text:'Uses data for ads, recruiting, measurement, and enterprise services.'},security:{score:70,text:'Standard Microsoft-backed protections.'},transparency:{score:40,text:'Policies disclose broad uses, but profiling implications can be hard to grasp.'},userControl:{score:40,text:'Users can tune visibility and some ad settings.'},encryption:'In transit',breaches:'Past scraping and data exposure issues remain notable trust concerns.',policyReadability:'Medium'}},
+  {name:'Reddit',score:52,category:'Community',tags:['Community','Forums'],summary:'Moderate privacy posture with pseudonymity benefits but significant behavioural tracking.',details:{dataCollection:{score:45,text:'Collects account details, posts, comments, engagement data, device info, and browsing signals.'},thirdPartySharing:{score:45,text:'Uses vendors, analytics, ad systems, and partner services.'},security:{score:65,text:'Baseline account security and encrypted transport.'},transparency:{score:55,text:'Policies are available and fairly readable.'},userControl:{score:50,text:'Users can limit some visibility and personalisation.'},encryption:'In transit',breaches:'Past incidents and public-data scraping concerns remain relevant.',policyReadability:'Medium'}},
+  {name:'Pinterest',score:36,category:'Social Media',tags:['Social Media','Discovery'],summary:'Ad-supported discovery platform with substantial interest profiling and partner measurement.',details:{dataCollection:{score:20,text:'Collects saved interests, search and pin activity, device identifiers, and inferred preference profiles.'},thirdPartySharing:{score:20,text:'Uses advertising, measurement, and partner systems supporting user profiling.'},security:{score:65,text:'Standard protections and encrypted connections.'},transparency:{score:35,text:'Policies cover many practices but remain broad.'},userControl:{score:40,text:'Some ad and personalisation settings exist, but tracking minimisation is limited.'},encryption:'In transit',breaches:'No recent major breach.',policyReadability:'Medium'}},
+  {name:'PayPal',score:59,category:'Finance',tags:['Finance','Payments'],summary:'Collects highly sensitive financial and identity information, but strong security lifts its score relative to ad-driven platforms.',details:{dataCollection:{score:50,text:'Collects identity info, payment credentials, transaction history, device data, and fraud-prevention signals.'},thirdPartySharing:{score:55,text:'Shares data with banks, merchants, fraud tools, regulators, and service providers.'},security:{score:80,text:'Strong security controls, fraud systems, and account protections.'},transparency:{score:55,text:'Disclosures are fairly detailed but complex.'},userControl:{score:55,text:'Users can manage some settings; regulatory retention limits data minimisation.'},encryption:'In transit and at rest for key systems',breaches:'No single recent platform-wide breach.',policyReadability:'Medium'}},
+  {name:'Gmail',score:43,category:'Email',tags:['Email','Google'],summary:"Email content and metadata sit inside Google's broader account ecosystem creating significant privacy sensitivity.",details:{dataCollection:{score:25,text:'Collects account data, email metadata, service usage patterns, device info, and linked Google account activity.'},thirdPartySharing:{score:30,text:'Data used within Google services and shared with providers and legal processes.'},security:{score:80,text:'Strong account security, phishing protections, and encrypted transport.'},transparency:{score:40,text:"Disclosures are broad but embedded in Google's large ecosystem."},userControl:{score:40,text:'Users can manage some history and ad settings.'},encryption:'In transit; not end-to-end by default',breaches:'No recent Gmail-wide breach; email remains a high-value target.',policyReadability:'Low-Medium'}},
+  {name:'Google Maps',score:33,category:'Navigation',tags:['Navigation','Google'],summary:'Very sensitive location-centric service with broad behavioural inference potential and strong ecosystem linkage.',details:{dataCollection:{score:15,text:'Collects precise location, route history, search activity, device identifiers, and nearby-place interactions.'},thirdPartySharing:{score:20,text:"Integrated into Google's wider services and measurement systems."},security:{score:70,text:'Benefits from Google account security features and encrypted connections.'},transparency:{score:30,text:'Policies and settings exist, but location-history implications are not widely understood.'},userControl:{score:30,text:'Some history deletion and permission controls exist, but defaults create detailed movement profiles.'},encryption:'In transit',breaches:'No recent Maps-specific breach; location retention remains a major concern.',policyReadability:'Low-Medium'}},
+  {name:'Dropbox',score:72,category:'Productivity',tags:['Productivity','Cloud Storage'],summary:'Relatively stronger privacy posture for mainstream cloud storage with good security tooling.',details:{dataCollection:{score:70,text:'Collects account details, file metadata, usage analytics, device info, and billing data.'},thirdPartySharing:{score:70,text:'Shares data mainly with vendors and integrations rather than large ad networks.'},security:{score:80,text:'Strong security controls, admin tooling, and encrypted connections.'},transparency:{score:70,text:'Policies and security documentation are relatively clear.'},userControl:{score:70,text:'Users and admins have meaningful control over sharing and connected apps.'},encryption:'In transit and at rest',breaches:'Historical incidents exist but current posture is stronger.',policyReadability:'High'}},
+  {name:'Microsoft Teams',score:66,category:'Productivity',tags:['Productivity','Work'],summary:'Moderate-to-good privacy posture for workplace collaboration with enterprise telemetry tradeoffs.',details:{dataCollection:{score:60,text:'Collects account info, meeting metadata, chat content, device data, and collaboration telemetry.'},thirdPartySharing:{score:65,text:'Sharing primarily with enterprise admins, Microsoft services, and support vendors.'},security:{score:80,text:'Mature enterprise security controls, access policies, and compliance tooling.'},transparency:{score:65,text:'Documentation is extensive though employer-admin visibility may not be understood by users.'},userControl:{score:60,text:'Controls depend on organisational policy; employers often define the real privacy baseline.'},encryption:'In transit and at rest',breaches:'No recent single event dominates.',policyReadability:'Medium'}},
+  {name:'Slack',score:69,category:'Productivity',tags:['Productivity','Work'],summary:'Reasonably strong workplace privacy posture; workspace admins and retention policies shape real-world privacy.',details:{dataCollection:{score:65,text:'Collects account data, message content, workspace activity, integrations metadata, and device info.'},thirdPartySharing:{score:70,text:'Sharing generally limited to vendors, enterprise functions, and approved integrations.'},security:{score:80,text:'Strong enterprise security features and access controls.'},transparency:{score:65,text:'Policies are fairly clear, but users may underestimate admin access.'},userControl:{score:65,text:'Decent controls for notifications and profile settings; true privacy depends on workspace governance.'},encryption:'In transit and at rest',breaches:'No recent major platform-wide breach.',policyReadability:'Medium-High'}},
+  {name:'Twitch',score:49,category:'Video',tags:['Video','Gaming'],summary:'Moderate privacy risks driven by advertising, viewing behaviour, chat visibility, and Amazon ecosystem linkage.',details:{dataCollection:{score:40,text:'Collects viewing activity, chat participation, subscriptions, device info, and engagement behaviour.'},thirdPartySharing:{score:40,text:'Uses vendors, payment processors, analytics, and ad systems with ties to Amazon.'},security:{score:65,text:'Standard account safeguards exist.'},transparency:{score:50,text:'Policies explain major data uses, but live interaction implications are easy to overlook.'},userControl:{score:50,text:'Users can manage some chat, discoverability, and account settings.'},encryption:'In transit',breaches:'Past breach history remains relevant.',policyReadability:'Medium'}},
+  {name:'Airbnb',score:57,category:'Travel',tags:['Travel','Bookings'],summary:'Moderate data collection driven by identity, payment, travel, and trust-and-safety requirements.',details:{dataCollection:{score:50,text:'Collects identity details, payment data, booking history, communications, and verification materials.'},thirdPartySharing:{score:50,text:'Shares data with hosts, payment processors, identity vendors, and support providers.'},security:{score:70,text:'Standard security controls and fraud-prevention systems.'},transparency:{score:60,text:'Policies are fairly detailed especially around booking and host interactions.'},userControl:{score:55,text:'Users can manage some profile fields and permissions.'},encryption:'In transit',breaches:'No recent platform-wide breach.',policyReadability:'Medium'}}
+];
+
+const ARTICLES = [
+  {title:'Understanding Privacy Policies: What They Really Mean',tag:'Basics',time:'8 min read',desc:'Learn to decode the legal language in privacy policies and identify red flags that indicate poor data practices.',vis:'v1',icon:'file-text'},
+  {title:'How Advertisers Track You Across the Web',tag:'Tracking',time:'12 min read',desc:'A deep dive into the technologies advertisers use to follow your digital footprint, from cookies to fingerprinting.',vis:'v2',icon:'eye'},
+  {title:'End-to-End Encryption Explained',tag:'Security',time:'6 min read',desc:'What end-to-end encryption actually means, which apps use it, and why it matters for your private conversations.',vis:'v3',icon:'lock',html:"<h2>What is End-to-End Encryption?</h2><p>End-to-end encryption (E2EE) ensures that only you and the person you're communicating with can read your messages. Not even the service provider can access them.</p><h2>Apps with True E2EE</h2><ul><li>Signal (all messages by default)</li><li>WhatsApp (messages, not metadata)</li><li>Apple iMessage (between Apple devices)</li></ul>"},
+  {title:'Social Media Data Harvesting: The Full Picture',tag:'Social Media',time:'15 min read',desc:"How platforms like Facebook, Instagram, and TikTok harvest your data even when you're not using their apps.",vis:'v4',icon:'share-2'},
+  {title:'Data Brokers: The Hidden Industry Selling Your Information',tag:'Data Privacy',time:'10 min read',desc:'Who data brokers are, what information they hold, and how to opt out of their databases.',vis:'v5',icon:'database'},
+  {title:'Securing Your Digital Identity: A Practical Guide',tag:'Security',time:'20 min read',desc:'Step-by-step guide to protecting your accounts, devices, and personal information from common threats.',vis:'v6',icon:'shield'},
+  {title:"Children's Privacy Online: What Parents Need to Know",tag:'Family',time:'11 min read',desc:"How apps collect children's data, the laws designed to protect minors, and practical steps for parents.",vis:'v7',icon:'users',html:"<h2>Why Children's Privacy is Different</h2><p>Children are particularly vulnerable to privacy violations online. Their data is collected from an early age, creating profiles that can follow them for decades.</p><h2>Key Protections</h2><p>COPPA (Children's Online Privacy Protection Act) in the US requires parental consent for collecting data from children under 13. Similar laws exist in other jurisdictions.</p>"},
+  {title:'The Future of Privacy: AI, Biometrics, and Your Rights',tag:'Future',time:'14 min read',desc:'How emerging technologies are creating new privacy challenges and what regulatory frameworks are evolving.',vis:'v8',icon:'cpu'}
+];
+
+// ════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════
+let trackedApps = new Set();
+let curFilter = 'all';
+let curSearch = '';
+const SK = 'ppv4_tracked';
+
+// ════════════════════════════════════════
+//  NAVIGATION
+// ════════════════════════════════════════
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  document.querySelector('[data-page="' + id + '"]').classList.add('active');
+  if (id === 'methodology') setTimeout(initMethodChart, 50);
+  closeMob();
+}
+function openMob() {
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('sbOverlay').classList.add('active');
+}
+function closeMob() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sbOverlay').classList.remove('active');
+}
+
+// ════════════════════════════════════════
+//  THEME
+// ════════════════════════════════════════
+function initTheme() {
+  const saved = (() => { try { return localStorage.getItem('pp_theme'); } catch(e) { return null; } })();
+  const theme = saved || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+  applyTheme(theme);
+  document.getElementById('themeToggle').addEventListener('click', () => {
+    const cur = document.documentElement.getAttribute('data-theme');
+    applyTheme(cur === 'dark' ? 'light' : 'dark');
+  });
+}
+function applyTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  try { localStorage.setItem('pp_theme', t); } catch(e) {}
+  const btn = document.getElementById('themeToggle');
+  if (btn) {
+    btn.innerHTML = t === 'dark'
+      ? '<i data-lucide="sun"></i><span>Light Mode</span>'
+      : '<i data-lucide="moon"></i><span>Dark Mode</span>';
+    try { lucide.createIcons(); } catch(e) {}
+  }
+}
+
+// ════════════════════════════════════════
+//  GAUGE
+// ════════════════════════════════════════
+function drawGauge() {
+  const canvas = document.getElementById('gaugeCanvas');
+  if (!canvas) return;
+  const score = trackedApps.size > 0
+    ? Math.round([...trackedApps].reduce((s,n) => { const a = APPS.find(x => x.name === n); return s + (a ? a.score : 50); }, 0) / trackedApps.size)
+    : 0;
+  const cls = score >= 70 ? 'good' : score >= 40 ? 'fair' : 'poor';
+  const c = cls === 'good' ? '#10b981' : cls === 'fair' ? '#f59e0b' : '#ef4444';
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, 200, 200);
+  ctx.beginPath(); ctx.arc(100,100,80,Math.PI,2*Math.PI); ctx.strokeStyle='rgba(255,255,255,.07)'; ctx.lineWidth=18; ctx.lineCap='round'; ctx.stroke();
+  if (score > 0) {
+    ctx.beginPath(); ctx.arc(100,100,80,Math.PI,Math.PI + (score/100)*Math.PI); ctx.strokeStyle=c; ctx.lineWidth=18; ctx.lineCap='round'; ctx.stroke();
+  }
+  const numEl = document.getElementById('gaugeNum');
+  if (numEl) { numEl.style.color = c; numEl.textContent = trackedApps.size > 0 ? score : '–'; }
+  const badge = document.getElementById('scoreBadge');
+  if (badge) {
+    badge.className = 'score-badge ' + (trackedApps.size > 0 ? cls : 'fair');
+    const lbl = {good:'Good Standing', fair:'Needs Improvement', poor:'At Risk'};
+    const ico = {good:'shield-check', fair:'shield-alert', poor:'shield-x'};
+    const k = trackedApps.size > 0 ? cls : 'fair';
+    badge.innerHTML = '<i data-lucide="' + ico[k] + '" style="width:16px;height:16px"></i> ' + lbl[k];
+    try { lucide.createIcons(); } catch(e) {}
+  }
+}
+
+function updateStats() {
+  const el = id => document.getElementById(id);
+  if (el('statApps')) el('statApps').textContent = trackedApps.size;
+  if (el('statAlerts')) el('statAlerts').textContent = Math.min(trackedApps.size * 2, 12);
+  if (el('statBreaches')) {
+    const poor = [...trackedApps].filter(n => { const a = APPS.find(x => x.name === n); return a && a.score < 40; }).length;
+    el('statBreaches').textContent = poor;
+  }
+}
+
+function updateDash() { drawGauge(); updateStats(); }
+
+// ════════════════════════════════════════
+//  TRACKER
+// ════════════════════════════════════════
+function setFilter(btn, f) {
+  curFilter = f;
+  document.querySelectorAll('.ftab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  renderApps();
+}
+
+function filterApps() {
+  curSearch = document.getElementById('searchInput').value.toLowerCase();
+  renderApps();
+}
+
+function sc(n) { return n >= 70 ? 'good' : n >= 40 ? 'fair' : 'poor'; }
+
+function renderApps() {
+  const grid = document.getElementById('appGrid');
+  if (!grid) return;
+  const filtered = APPS.filter(app => {
+    const ms = !curSearch || app.name.toLowerCase().includes(curSearch) || app.category.toLowerCase().includes(curSearch) || app.tags.some(t => t.toLowerCase().includes(curSearch));
+    const mf = curFilter === 'all' || (curFilter === 'tracked' ? trackedApps.has(app.name) : app.category === curFilter || app.tags.includes(curFilter));
+    return ms && mf;
+  });
+  if (!filtered.length) { grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:var(--space-12);color:var(--text-muted)">No apps match your search.</div>'; return; }
+  grid.innerHTML = filtered.map(app => {
+    const s = sc(app.score);
+    const tracked = trackedApps.has(app.name);
+    return '<div class="card card-hov app-card" onclick="openModal(\'' + app.name.replace(/'/g,"&#39;") + '\')">'
+      + '<div class="app-card-head"><span class="app-name">' + app.name + '</span><span class="priv-score ' + s + '">' + app.score + '</span><span style="font-size:var(--text-xs);color:var(--text-faint);font-weight:400;font-family:var(--font-body)">/100</span></div>'
+      + '<div class="score-bar"><div class="score-fill ' + s + '" style="width:' + app.score + '%"></div></div>'
+      + '<p class="app-summary">' + app.summary + '</p>'
+      + '<div class="app-tags">' + app.tags.map(t => '<span class="tag">' + t + '</span>').join('') + '</div>'
+      + '<div class="app-card-foot">'
+      + '<button class="track-btn' + (tracked ? ' tracked' : '') + '" onclick="event.stopPropagation();toggleTrack(\'' + app.name.replace(/'/g,"&#39;") + '\')">' + (tracked ? 'Tracked ✓' : 'Track') + '</button>'
+      + '<span class="detail-link">Details <i data-lucide="arrow-right" style="width:12px;height:12px"></i></span>'
+      + '</div></div>';
+  }).join('');
+  try { lucide.createIcons(); } catch(e) {}
+}
+
+function toggleTrack(name) {
+  if (trackedApps.has(name)) trackedApps.delete(name); else trackedApps.add(name);
+  document.getElementById('trackedCount').textContent = trackedApps.size;
+  saveTracked();
+  renderApps();
+  updateDash();
+}
+
+// ════════════════════════════════════════
+//  APP MODAL
+// ════════════════════════════════════════
+function openModal(name) {
+  const app = APPS.find(a => a.name === name);
+  if (!app) return;
+  const s = sc(app.score);
+  document.getElementById('modalTitle').textContent = app.name + ' Privacy Report';
+  const bar = v => {
+    const bc = v >= 70 ? '#10b981' : v >= 40 ? '#f59e0b' : '#ef4444';
+    return '<div class="bbar"><div class="bbar-fill" style="width:' + v + '%;background:' + bc + '"></div></div>';
+  };
+  const d = app.details;
+  document.getElementById('modalBody').innerHTML =
+    '<div class="det-score-head"><div class="det-score-circle ' + s + '">' + app.score + '</div><div class="det-info"><h3>' + app.name + '</h3><p>' + app.category + ' · ' + app.tags.join(', ') + '</p><p style="margin-top:var(--space-2)">' + app.summary + '</p></div></div>'
+    + '<div class="det-sec"><h4>Score Breakdown</h4>'
+    + [['Data Collection','dataCollection'],['Third-Party Sharing','thirdPartySharing'],['Security','security'],['Transparency','transparency'],['User Control','userControl']].map(([lbl,k]) =>
+      '<div class="bbar-wrap"><div class="bbar-lbl"><span>' + lbl + '</span><span>' + d[k].score + '/100</span></div>' + bar(d[k].score) + '<p style="font-size:var(--text-xs);color:var(--text-muted);margin-top:var(--space-1);line-height:1.5">' + d[k].text + '</p></div>'
+    ).join('')
+    + '</div><div class="det-sec"><h4>Technical Details</h4><div class="det-grid">'
+    + '<div class="det-item"><div class="det-item-lbl">Encryption</div><div class="det-item-val">' + d.encryption + '</div></div>'
+    + '<div class="det-item"><div class="det-item-lbl">Known Breaches</div><div class="det-item-val">' + d.breaches + '</div></div>'
+    + '<div class="det-item"><div class="det-item-lbl">Policy Readability</div><div class="det-item-val">' + d.policyReadability + '</div></div>'
+    + '<div class="det-item"><div class="det-item-lbl">Privacy Score</div><div class="det-item-val"><span class="dot ' + (s==='good'?'green':s==='fair'?'yellow':'red') + '"></span>' + app.score + '/100 – ' + s.charAt(0).toUpperCase() + s.slice(1) + '</div></div>'
+    + '</div></div>';
+  document.getElementById('appModal').classList.add('active');
+  try { lucide.createIcons(); } catch(e) {}
+}
+function closeModal() { document.getElementById('appModal').classList.remove('active'); }
+document.getElementById('appModal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+
+// ════════════════════════════════════════
+//  ARTICLES
+// ════════════════════════════════════════
+function renderArticles() {
+  const grid = document.getElementById('articlesGrid');
+  if (!grid) return;
+  grid.innerHTML = ARTICLES.map((a,i) =>
+    '<div class="card card-hov article-card" onclick="openArticle(' + i + ')">'
+    + '<div class="art-visual ' + a.vis + '"><i data-lucide="' + a.icon + '"></i></div>'
+    + '<div class="art-body"><div class="art-meta"><span class="art-tag">' + a.tag + '</span><span class="art-time">' + a.time + '</span></div>'
+    + '<div class="art-title">' + a.title + '</div><p class="art-desc">' + a.desc + '</p></div></div>'
+  ).join('');
+  try { lucide.createIcons(); } catch(e) {}
+}
+function openArticle(i) {
+  const a = ARTICLES[i];
+  document.getElementById('artContent').innerHTML =
+    '<h1>' + a.title + '</h1>'
+    + '<div class="art-view-meta"><span class="art-tag">' + a.tag + '</span><span class="art-time">' + a.time + '</span></div>'
+    + '<div class="coming-soon-box">'
+    + '<div class="cs-icon"><i data-lucide="book-lock"></i></div>'
+    + '<h2 class="cs-title">Full article coming soon</h2>'
+    + '<p class="cs-desc">Complete articles will be available in the finished version of PrivacyPal. Stay tuned for in-depth guides, expert analysis, and actionable privacy tips.</p>'
+    + '<button class="cs-back" onclick="closeArticle()"><i data-lucide="arrow-left" style="width:15px;height:15px"></i> Back to Articles</button>'
+    + '</div>';
+  document.getElementById('artListView').style.display = 'none';
+  document.getElementById('artView').classList.add('active');
+  try { lucide.createIcons(); } catch(e) {}
+}
+function closeArticle() {
+  document.getElementById('artListView').style.display = '';
+  document.getElementById('artView').classList.remove('active');
+}
+
+// ════════════════════════════════════════
+//  METHODOLOGY CHART
+// ════════════════════════════════════════
+let methodChartInst = null;
+function initMethodChart() {
+  const canvas = document.getElementById('methodChart');
+  if (!canvas || methodChartInst) return;
+  methodChartInst = new Chart(canvas.getContext('2d'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Data Collection','Third-Party Sharing','Security','Transparency','User Control'],
+      datasets: [{ data:[25,25,20,15,15], backgroundColor:['#01696f','#f59e0b','#10b981','#4fb3d9','#a855f7'], borderWidth:0, hoverOffset:8 }]
+    },
+    options: { responsive:true, plugins:{ legend:{ display:false } }, cutout:'65%' }
+  });
+}
+
+// ════════════════════════════════════════
+//  STORAGE
+// ════════════════════════════════════════
+function saveTracked() { try { localStorage.setItem(SK, JSON.stringify([...trackedApps])); } catch(e) {} }
+function loadTracked() {
+  try {
+    const v = localStorage.getItem(SK);
+    if (v !== null) {
+      const arr = JSON.parse(v);
+      if (Array.isArray(arr)) {
+        trackedApps = new Set(arr.filter(n => APPS.some(a => a.name === n)));
+        return true;
+      }
+    }
+  } catch(e) {}
+  return false;
+}
+
+// ════════════════════════════════════════
+//  STARTUP POPUP
+// ════════════════════════════════════════
+let suSel = new Set();
+let suFilter = 'All';
+
+function suCats() {
+  const cats = ['All'];
+  APPS.forEach(a => { if (!cats.includes(a.category)) cats.push(a.category); });
+  return cats;
+}
+
+function suRender() {
+  const body = document.getElementById('suBody');
+  if (!body) return;
+  const cats = suCats();
+  let h = '<div class="su-filters">';
+  cats.forEach(c => {
+    h += '<button class="su-fbtn' + (c === suFilter ? ' on' : '') + '" onclick="suSetFilter(\'' + c.replace(/'/g,"&#39;") + '\')">' + c + '</button>';
+  });
+  h += '</div><div class="su-actions"><button class="su-action" onclick="suAll()">Select All</button><button class="su-action" onclick="suNone()">Clear All</button></div><div class="su-grid">';
+  const visible = suFilter === 'All' ? APPS : APPS.filter(a => a.category === suFilter);
+  visible.forEach(app => {
+    const idx = APPS.indexOf(app);
+    const s = sc(app.score);
+    const on = suSel.has(app.name) ? ' on' : '';
+    h += '<div class="su-item' + on + '" onclick="suToggle(' + idx + ',this)">'
+      + '<div class="su-cb"><svg class="su-ck" viewBox="0 0 12 12"><polyline points="1.5,6 5,9.5 10.5,2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>'
+      + '<div style="flex:1;min-width:0"><div class="su-name">' + app.name + '</div><div class="su-cat">' + app.category + '</div></div>'
+      + '<span class="su-pill ' + s + '">' + app.score + '</span>'
+      + '</div>';
+  });
+  h += '</div>';
+  body.innerHTML = h;
+}
+
+function suSetFilter(cat) { suFilter = cat; suRender(); }
+
+function suToggle(idx, el) {
+  const app = APPS[idx];
+  if (!app) return;
+  if (suSel.has(app.name)) { suSel.delete(app.name); el.classList.remove('on'); }
+  else { suSel.add(app.name); el.classList.add('on'); }
+  suUpdateCount();
+}
+
+function suAll() {
+  const visible = suFilter === 'All' ? APPS : APPS.filter(a => a.category === suFilter);
+  visible.forEach(a => suSel.add(a.name));
+  document.querySelectorAll('.su-item').forEach(el => el.classList.add('on'));
+  suUpdateCount();
+}
+
+function suNone() {
+  const visible = suFilter === 'All' ? APPS : APPS.filter(a => a.category === suFilter);
+  visible.forEach(a => suSel.delete(a.name));
+  document.querySelectorAll('.su-item').forEach(el => el.classList.remove('on'));
+  suUpdateCount();
+}
+
+function suUpdateCount() {
+  const n = suSel.size;
+  document.getElementById('suCount').textContent = n;
+  document.getElementById('suPlural').textContent = n === 1 ? '' : 's';
+  document.getElementById('suGoBtn').disabled = n === 0;
+}
+
+function suConfirm() {
+  trackedApps = new Set(suSel);
+  saveTracked();
+  suClose();
+  finalize();
+}
+
+function suSkip() { suClose(); finalize(); }
+
+function suClose() {
+  document.getElementById('suOverlay').classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+// ════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════
+function finalize() {
+  document.getElementById('trackedCount').textContent = trackedApps.size;
+  drawGauge();
+  updateStats();
+  renderApps();
+}
+
+function init() {
+  if (typeof Chart === 'undefined' || typeof lucide === 'undefined') { setTimeout(init, 80); return; }
+  try { lucide.createIcons(); } catch(e) {}
+  initTheme();
+  renderArticles();
+  const hasSaved = loadTracked();
+  if (hasSaved) {
+    // returning visitor – restore and skip popup
+    finalize();
+  } else {
+    // first visit – show popup
+    document.body.style.overflow = 'hidden';
+    document.getElementById('suOverlay').classList.add('active');
+    suRender();
+    suUpdateCount();
+  }
+}
+
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+else setTimeout(init, 0);
+</script>
+</body>
+</html>
